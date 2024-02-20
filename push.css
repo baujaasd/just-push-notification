@@ -1,0 +1,169 @@
+:root {
+  --bg: #4279EF;
+  --titleColor: #fff;
+  --textColor: #fff;
+  --red: tomato;
+  --gap: 12px;
+  --paddingScreen: 12px;
+  --shadow: 0px 2px 5px rgba(0, 0, 0, 0.25);
+  --indicatorColor: #FFD700;
+  --borderRadius: 8px;
+  --closeBtnBg: #dedede;
+  --closeBtnColor: #363636;
+}
+
+.notification-container {
+  inset: 0;
+  width: 100vw;
+  height: 100dvh;
+  position: fixed;
+  display: -webkit-box;
+  display: -ms-flexbox;
+  display: flex;
+  -webkit-box-orient: vertical;
+  -webkit-box-direction: normal;
+  -ms-flex-direction: column;
+  flex-direction: column;
+  -webkit-box-align: center;
+  -ms-flex-align: center;
+  align-items: center;
+  gap: var(--gap);
+  padding: var(--paddingScreen);
+  z-index: 9999;
+  pointer-events: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+}
+
+.notification-container.top-right {
+  -webkit-box-align: end;
+  -ms-flex-align: end;
+  align-items: flex-end;
+}
+
+.notification-container.bottom-right {
+  -webkit-box-align: end;
+  -ms-flex-align: end;
+  align-items: flex-end;
+  -webkit-box-pack: end;
+  -ms-flex-pack: end;
+  justify-content: flex-end;
+}
+
+.notification-container.top-left {
+  -webkit-box-align: start;
+  -ms-flex-align: start;
+  align-items: flex-start;
+}
+
+.notification-container.bottom-left {
+  -webkit-box-align: start;
+  -ms-flex-align: start;
+  align-items: flex-start;
+  -webkit-box-pack: end;
+  -ms-flex-pack: end;
+  justify-content: flex-end;
+}
+
+.notification-container.top-center {
+  -webkit-box-align: center;
+  -ms-flex-align: center;
+  align-items: center;
+  -webkit-box-pack: start;
+  -ms-flex-pack: start;
+  justify-content: flex-start;
+}
+
+.notification-container.bottom-center {
+  -webkit-box-align: center;
+  -ms-flex-align: center;
+  align-items: center;
+  -webkit-box-pack: end;
+  -ms-flex-pack: end;
+  justify-content: flex-end;
+}
+
+.notification {
+  background-color: var(--bg);
+  padding: 10px;
+  border-radius: var(--borderRadius);
+  -webkit-box-shadow: var(--shadow);
+  box-shadow: var(--shadow);
+  min-width: 100px;
+  max-width: 300px;
+  width: 100%;
+  opacity: 0;
+  -webkit-transition: opacity 0.5s ease, -webkit-transform 0.5s ease;
+  transition: opacity 0.5s ease, -webkit-transform 0.5s ease;
+  -o-transition: opacity 0.5s ease, transform 0.5s ease;
+  transition: opacity 0.5s ease, transform 0.5s ease;
+  transition: opacity 0.5s ease, transform 0.5s ease, -webkit-transform 0.5s ease;
+  pointer-events: auto;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+}
+
+.notification.error {
+  background-color: var(--red);
+}
+
+.notification-show {
+  opacity: 1;
+  -webkit-transform: translateY(0);
+  -ms-transform: translateY(0);
+  transform: translateY(0);
+}
+
+.notification-header {
+  font-weight: bold;
+  font-size: 14px;
+  color: var(--titleColor);
+}
+
+.notification-content {
+  margin-top: 4px;
+  font-size: 14px;
+  color: var(--textColor);
+}
+
+.notification-indicator {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  height: 3px;
+  background-color: var(--indicatorColor);
+  border-bottom-left-radius: var(--borderRadius);
+  border-bottom-right-radius: var(--borderRadius);
+}
+
+.notification-close {
+  position: absolute;
+  right: 4px;
+  top: 4px;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  border: none;
+  outline: none;
+  display: -webkit-box;
+  display: -ms-flexbox;
+  display: flex;
+  -webkit-box-align: center;
+  -ms-flex-align: center;
+  align-items: center;
+  -webkit-box-pack: center;
+  -ms-flex-pack: center;
+  justify-content: center;
+  cursor: pointer;
+  border-radius: 100%;
+  background-color: var(--closeBtnBg);
+  color: var(--closeBtnColor);
+  font-size: 12px;
+  line-height: 1;
+  width: 16px;
+  height: 16px;
+}
