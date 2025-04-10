@@ -1,105 +1,161 @@
-class Notification {
+class NotificationSystem {
   constructor() {
-    // Создание контейнеров для каждой позиции
-    this.positions = ['top-left', 'top-right', 'bottom-left', 'bottom-right', 'top-center', 'bottom-center'];
     this.containers = {};
-
-    this.positions.forEach((position) => {
-      const container = document.createElement("div");
-      container.classList.add("notification-container", position);
-      document.body.appendChild(container);
-      this.containers[position] = container;
-    });
+    this.positions = [
+      'top-left', 'top-right',
+      'bottom-left', 'bottom-right',
+      'top-center', 'bottom-center'
+    ];
   }
 
-  createNotification(options) {
-    const {
-      title = '',
-      message = '',
-      animationTime = 250,
-      activeTime = 3000,
-      showIndicator = true,
-      additionalClass = '',
-      position = 'bottom-right' // Позиция по умолчанию
-    } = options;
+  getContainer(position) {
+    if (!this.containers[position]) {
+      const container = document.createElement("div");
+      container.className = `notification__container notification__container--${position}`;
+      container.setAttribute("role", "region");
+      container.setAttribute("aria-live", "polite");
+      container.setAttribute("aria-atomic", "false");
 
-    const container = this.containers[position];
-    const notification = document.createElement("div");
-    notification.classList.add("notification");
-    if (additionalClass) {
-      notification.classList.add(additionalClass);
+      document.body.appendChild(container);
+      this.containers[position] = container;
     }
 
-    const header = document.createElement("div");
-    header.classList.add("notification-header");
-    header.textContent = title;
-    notification.appendChild(header);
+    return this.containers[position];
+  }
 
-    const content = document.createElement("div");
-    content.classList.add("notification-content");
+  createNotification({
+    title = "",
+    message = "",
+    animationTime = 250,
+    activeTime = 3000,
+    showIndicator = true,
+    type = "", // success, error, info
+    position = "bottom-right"
+  }) {
+    const container = this.getContainer(position);
+
+    const notification = document.createElement("div");
+    notification.className = `notification notification--${type}`;
+    notification.setAttribute("role", "alert");
+    notification.setAttribute("aria-atomic", "true");
+
+    if (title) {
+      const header = document.createElement("h3");
+      header.className = "notification__header";
+      header.textContent = title;
+      notification.appendChild(header);
+    }
+
+    const content = document.createElement("p");
+    content.className = "notification__content";
     content.textContent = message;
     notification.appendChild(content);
 
+    let indicator;
+    let indicatorAnimationFrame;
+    let hoverPaused = false;
+    let startTime = null;
+    let pauseTime = 0;
+
     if (showIndicator) {
-      const indicator = document.createElement("div");
-      indicator.classList.add("notification-indicator");
+      indicator = document.createElement("div");
+      indicator.className = "notification__indicator";
       notification.appendChild(indicator);
-
-      let startTime = null;
-      const duration = activeTime;
-
-      const animateIndicator = (timestamp) => {
-        if (!startTime) startTime = timestamp;
-        const elapsedTime = timestamp - startTime;
-        const progress = Math.min(elapsedTime / duration, 1);
-        indicator.style.width = `${100 - progress * 100}%`;
-
-        if (elapsedTime < duration) {
-          requestAnimationFrame(animateIndicator);
-        } else {
-          this.closeNotification(notification);
-        }
-      };
-
-      requestAnimationFrame(animateIndicator);
     }
+
+    // Закрытие уведомления
+    const close = () => {
+      this.closeNotification(notification);
+    };
+
+    // Таймер для закрытия
+    let autoCloseTimeout = setTimeout(close, activeTime + animationTime);
+
+    // Анимация индикатора
+    const animate = (timestamp) => {
+      if (!startTime) startTime = timestamp;
+      if (hoverPaused) return;
+
+      const progress = (timestamp - startTime - pauseTime) / activeTime;
+      if (indicator) {
+        indicator.style.width = `${Math.max(0, 100 - progress * 100)}%`;
+      }
+
+      if (progress < 1) {
+        indicatorAnimationFrame = requestAnimationFrame(animate);
+      }
+    };
+
+    if (showIndicator) {
+      indicatorAnimationFrame = requestAnimationFrame(animate);
+    }
+
+    // При наведении — отменяем таймер и паузим анимацию
+    notification.addEventListener("mouseenter", () => {
+      hoverPaused = true;
+      clearTimeout(autoCloseTimeout);
+      pauseTime = performance.now() - startTime;
+    });
+
+    // При уходе мыши — перезапускаем таймер
+    notification.addEventListener("mouseleave", () => {
+      hoverPaused = false;
+      autoCloseTimeout = setTimeout(close, activeTime - pauseTime);
+      if (showIndicator) {
+        indicatorAnimationFrame = requestAnimationFrame(animate);
+      }
+    });
+
+    // Кнопка закрытия
+    const closeBtn = document.createElement("button");
+    closeBtn.className = "notification__close";
+    closeBtn.setAttribute("aria-label", "Закрыть уведомление");
+    closeBtn.innerHTML = "&times;";
+    closeBtn.addEventListener("click", () => {
+      clearTimeout(autoCloseTimeout);
+      cancelAnimationFrame(indicatorAnimationFrame);
+      close();
+    });
+    notification.appendChild(closeBtn);
 
     container.appendChild(notification);
 
-    setTimeout(() => {
-      notification.style.opacity = '1';
-      notification.style.transform = 'translateY(0)';
-    }, animationTime);
-
-    const closeButton = document.createElement("button");
-    closeButton.classList.add("notification-close");
-    closeButton.innerHTML = "&#10005;";
-    closeButton.onclick = () => this.closeNotification(notification);
-    notification.appendChild(closeButton);
-
-    setTimeout(() => {
-      this.closeNotification(notification);
-    }, activeTime + animationTime);
+    requestAnimationFrame(() => {
+      notification.classList.add("notification--show");
+    });
   }
 
   closeNotification(notification) {
-    notification.style.opacity = '0';
-    notification.style.transform = 'translateY(-20px)';
-    notification.addEventListener('transitionend', () => {
-      if (notification.parentNode) {
-        notification.parentNode.removeChild(notification);
-      }
+    notification.classList.remove("notification--show");
+    notification.style.opacity = "0";
+    notification.style.transform = "translateY(-20px)";
+    notification.addEventListener("transitionend", () => {
+      notification.remove();
     }, { once: true });
   }
 }
 
-document.addEventListener("DOMContentLoaded", function () {
-  window.notificationSystem = new Notification();
+document.addEventListener("DOMContentLoaded", () => {
+  window.notificationSystem = new NotificationSystem();
 
-// Пример вызова
+  // Примеры:
+  window.notificationSystem.createNotification({
+    title: "Успешно",
+    message: "Данные сохранены.",
+    type: "success",
+    // activeTime: "10000000"
+  });
 
-window.notificationSystem.createNotification({
-  title: "Привет 👋",
-  message: "Уведомление",
+  // window.notificationSystem.createNotification({
+  //   title: "Ошибка",
+  //   message: "Что-то пошло не так",
+  //   type: "error"
+  // });
+
+  // window.notificationSystem.createNotification({
+  //   title: "Информация",
+  //   message: "Это просто уведомление",
+  //   type: "info",
+  //   showIndicator: false
+  // });
 });
-})

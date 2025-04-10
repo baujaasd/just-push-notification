@@ -1,169 +1,175 @@
 :root {
-  --bg: #4279EF;
-  --titleColor: #fff;
-  --textColor: #fff;
-  --red: tomato;
-  --gap: 12px;
-  --paddingScreen: 12px;
+  --notification-bg: #4279EF;
+  --notification-success: #4CAF50;
+  --notification-error: tomato;
+  --notification-info: #2196F3;
+  --notification-color: #fff;
+  --indicator-color: #FFD700;
+  --border-radius: 8px;
   --shadow: 0px 2px 5px rgba(0, 0, 0, 0.25);
-  --indicatorColor: #FFD700;
-  --borderRadius: 8px;
-  --closeBtnBg: #dedede;
-  --closeBtnColor: #363636;
+  --speed: .25s ease-in-out;
 }
 
-.notification-container {
-  inset: 0;
-  width: 100vw;
-  height: 100dvh;
+/* Контейнеры */
+.notification__container {
   position: fixed;
+  z-index: 9999;
   display: -webkit-box;
   display: -ms-flexbox;
   display: flex;
   -webkit-box-orient: vertical;
   -webkit-box-direction: normal;
-  -ms-flex-direction: column;
-  flex-direction: column;
-  -webkit-box-align: center;
-  -ms-flex-align: center;
-  align-items: center;
-  gap: var(--gap);
-  padding: var(--paddingScreen);
-  z-index: 9999;
+      -ms-flex-direction: column;
+          flex-direction: column;
+  gap: 12px;
+  padding: 12px;
   pointer-events: none;
-  -webkit-user-select: none;
-  -moz-user-select: none;
-  -ms-user-select: none;
-  user-select: none;
 }
 
-.notification-container.top-right {
-  -webkit-box-align: end;
-  -ms-flex-align: end;
-  align-items: flex-end;
-}
-
-.notification-container.bottom-right {
-  -webkit-box-align: end;
-  -ms-flex-align: end;
-  align-items: flex-end;
-  -webkit-box-pack: end;
-  -ms-flex-pack: end;
-  justify-content: flex-end;
-}
-
-.notification-container.top-left {
+.notification__container--top-left {
+  top: 0;
+  left: 0;
   -webkit-box-align: start;
-  -ms-flex-align: start;
-  align-items: flex-start;
+      -ms-flex-align: start;
+          align-items: flex-start;
 }
-
-.notification-container.bottom-left {
+.notification__container--top-right {
+  top: 0;
+  right: 0;
+  -webkit-box-align: end;
+      -ms-flex-align: end;
+          align-items: flex-end;
+}
+.notification__container--bottom-left {
+  bottom: 0;
+  left: 0;
   -webkit-box-align: start;
-  -ms-flex-align: start;
-  align-items: flex-start;
-  -webkit-box-pack: end;
-  -ms-flex-pack: end;
-  justify-content: flex-end;
+      -ms-flex-align: start;
+          align-items: flex-start;
 }
-
-.notification-container.top-center {
+.notification__container--bottom-right {
+  bottom: 0;
+  right: 0;
+  -webkit-box-align: end;
+      -ms-flex-align: end;
+          align-items: flex-end;
+}
+.notification__container--top-center {
+  top: 0;
+  left: 50%;
+  -webkit-transform: translateX(-50%);
+      -ms-transform: translateX(-50%);
+          transform: translateX(-50%);
   -webkit-box-align: center;
-  -ms-flex-align: center;
-  align-items: center;
-  -webkit-box-pack: start;
-  -ms-flex-pack: start;
-  justify-content: flex-start;
+      -ms-flex-align: center;
+          align-items: center;
 }
-
-.notification-container.bottom-center {
+.notification__container--bottom-center {
+  bottom: 0;
+  left: 50%;
+  -webkit-transform: translateX(-50%);
+      -ms-transform: translateX(-50%);
+          transform: translateX(-50%);
   -webkit-box-align: center;
-  -ms-flex-align: center;
-  align-items: center;
-  -webkit-box-pack: end;
-  -ms-flex-pack: end;
-  justify-content: flex-end;
+      -ms-flex-align: center;
+          align-items: center;
 }
 
+/* Уведомления */
 .notification {
-  background-color: var(--bg);
-  padding: 10px;
-  border-radius: var(--borderRadius);
-  -webkit-box-shadow: var(--shadow);
-  box-shadow: var(--shadow);
-  min-width: 100px;
-  max-width: 300px;
+  background-color: var(--notification-bg);
+  color: var(--notification-color);
+  min-width: 240px;
+  max-width: 320px;
   width: 100%;
+  padding: 12px;
+  border-radius: var(--border-radius);
+  -webkit-box-shadow: var(--shadow);
+          box-shadow: var(--shadow);
+  position: relative;
   opacity: 0;
-  -webkit-transition: opacity 0.5s ease, -webkit-transform 0.5s ease;
-  transition: opacity 0.5s ease, -webkit-transform 0.5s ease;
-  -o-transition: opacity 0.5s ease, transform 0.5s ease;
-  transition: opacity 0.5s ease, transform 0.5s ease;
-  transition: opacity 0.5s ease, transform 0.5s ease, -webkit-transform 0.5s ease;
+  -webkit-transform: translateY(20px);
+      -ms-transform: translateY(20px);
+          transform: translateY(20px);
+  -webkit-transition: opacity 0.4s ease, -webkit-transform 0.4s ease;
+  transition: opacity 0.4s ease, -webkit-transform 0.4s ease;
+  -o-transition: opacity 0.4s ease, transform 0.4s ease;
+  transition: opacity 0.4s ease, transform 0.4s ease;
+  transition: opacity 0.4s ease, transform 0.4s ease, -webkit-transform 0.4s ease;
   pointer-events: auto;
-  -webkit-user-select: none;
-  -moz-user-select: none;
-  -ms-user-select: none;
-  user-select: none;
 }
 
-.notification.error {
-  background-color: var(--red);
-}
-
-.notification-show {
+.notification--show {
   opacity: 1;
   -webkit-transform: translateY(0);
-  -ms-transform: translateY(0);
-  transform: translateY(0);
+      -ms-transform: translateY(0);
+          transform: translateY(0);
 }
 
-.notification-header {
+.notification--success {
+  background-color: var(--notification-success);
+}
+.notification--error {
+  background-color: var(--notification-error);
+}
+.notification--info {
+  background-color: var(--notification-info);
+}
+
+/* Контент */
+.notification__header {
   font-weight: bold;
   font-size: 14px;
-  color: var(--titleColor);
+  margin: 0 0 4px;
 }
-
-.notification-content {
-  margin-top: 4px;
+.notification__content {
   font-size: 14px;
-  color: var(--textColor);
+  margin: 0;
 }
 
-.notification-indicator {
+/* Индикатор */
+.notification__indicator {
   position: absolute;
   bottom: 0;
   left: 0;
   height: 3px;
-  background-color: var(--indicatorColor);
-  border-bottom-left-radius: var(--borderRadius);
-  border-bottom-right-radius: var(--borderRadius);
+  width: 100%;
+  background-color: var(--indicator-color);
+  border-bottom-left-radius: var(--border-radius);
+  border-bottom-right-radius: var(--border-radius);
 }
 
-.notification-close {
+/* Закрыть */
+.notification__close {
   position: absolute;
-  right: 4px;
-  top: 4px;
-  -webkit-appearance: none;
-  -moz-appearance: none;
-  appearance: none;
-  border: none;
-  outline: none;
+  top: 6px;
+  right: 6px;
   display: -webkit-box;
   display: -ms-flexbox;
   display: flex;
   -webkit-box-align: center;
-  -ms-flex-align: center;
-  align-items: center;
+      -ms-flex-align: center;
+          align-items: center;
   -webkit-box-pack: center;
-  -ms-flex-pack: center;
-  justify-content: center;
-  cursor: pointer;
-  border-radius: 100%;
-  background-color: var(--closeBtnBg);
-  color: var(--closeBtnColor);
-  font-size: 12px;
+      -ms-flex-pack: center;
+          justify-content: center;
+  text-align: center;
+  background: none;
+  border: none;
+  font-size: 14px;
   line-height: 1;
-  width: 16px;
-  height: 16px;
+  cursor: pointer;
+  color: #fff;
+  width: 18px;
+  height: 18px;
+  padding: 4px;
+  border-radius: 100px;
+  z-index: 10;
+}
+
+@media (hover: hover) {
+  .notification__close:hover {
+    background: #fff;
+    color: blue;
+  }
 }
