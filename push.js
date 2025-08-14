@@ -1,161 +1,288 @@
 class NotificationSystem {
-  constructor() {
+  /**
+   * @param {Object} options
+   * @param {number} [options.maxVisiblePerPosition=4] Максимум карточек в одном контейнере
+   */
+  constructor({ maxVisiblePerPosition = 4 } = {}) {
     this.containers = {};
     this.positions = [
       'top-left', 'top-right',
       'bottom-left', 'bottom-right',
       'top-center', 'bottom-center'
     ];
+    this.types = ['success', 'error', 'info'];
+    this.maxVisiblePerPosition = Number(maxVisiblePerPosition) > 0 ? Number(maxVisiblePerPosition) : 4;
+
+    // Делегированное закрытие по Esc (последнее добавленное в каждом контейнере)
+    this.__onKeydown = (e) => {
+      if (e.key !== 'Escape') return;
+      Object.values(this.containers).forEach(container => {
+        const last = container.lastElementChild;
+        if (last) this.closeNotification(last);
+      });
+    };
+    document.addEventListener('keydown', this.__onKeydown);
   }
 
+  /** Создать/получить контейнер позиции */
   getContainer(position) {
+    if (!this.positions.includes(position)) position = 'bottom-right';
     if (!this.containers[position]) {
-      const container = document.createElement("div");
+      const container = document.createElement('div');
       container.className = `notification__container notification__container--${position}`;
-      container.setAttribute("role", "region");
-      container.setAttribute("aria-live", "polite");
-      container.setAttribute("aria-atomic", "false");
-
+      container.dataset.position = position;
       document.body.appendChild(container);
       this.containers[position] = container;
     }
-
     return this.containers[position];
   }
 
-  createNotification({
-    title = "",
-    message = "",
-    animationTime = 250,
-    activeTime = 3000,
-    showIndicator = true,
-    type = "", // success, error, info
-    position = "bottom-right"
-  }) {
+  /**
+   * Создать уведомление
+   * @param {Object} opts
+   * @param {string} [opts.title]
+   * @param {string} [opts.message]
+   * @param {number} [opts.animationTime=250] (для совместимости; CSS рулит)
+   * @param {number} [opts.activeTime=3000] 0 или <0 — без автозакрытия и без индикатора
+   * @param {boolean} [opts.showIndicator=true]
+   * @param {'success'|'error'|'info'} [opts.type='info']
+   * @param {'top-left'|'top-right'|'bottom-left'|'bottom-right'|'top-center'|'bottom-center'} [opts.position='bottom-right']
+   * @param {boolean} [opts.closeOnClick=false]
+   * @param {Function} [opts.onOpen]
+   * @param {Function} [opts.onClose]
+   * @returns {{close:Function, el:HTMLElement, onClose:Function}}
+   */
+  createNotification(opts = {}) {
+    // Нормализация входных
+    let {
+      title = '',
+      message = '',
+      animationTime = 250,
+      activeTime = 3000,
+      showIndicator = true,
+      type = 'info',
+      position = 'bottom-right',
+      closeOnClick = false,
+      onOpen,
+      onClose
+    } = opts;
+
+    position = this.positions.includes(position) ? position : 'bottom-right';
+    type = this.types.includes(type) ? type : 'info';
+
+    const duration = Math.max(0, Number(activeTime) || 0);
     const container = this.getContainer(position);
 
-    const notification = document.createElement("div");
-    notification.className = `notification notification--${type}`;
-    notification.setAttribute("role", "alert");
-    notification.setAttribute("aria-atomic", "true");
+    // Лимит «стопки»
+    while (container.children.length >= this.maxVisiblePerPosition) {
+      this.closeNotification(container.firstElementChild);
+    }
+
+    // Карточка
+    const n = document.createElement('div');
+    n.className = `notification notification--${type}`;
+    n.dataset.position = position;
+
+    // ARIA id-шники для связи
+    const id = `ntf-${Date.now()}-${Math.random().toString(36).slice(2,8)}`;
+    n.id = id;
+    let headerId, contentId;
+
+    // Правильные роли/живость
+    const isError = type === 'error';
+    n.setAttribute('role', isError ? 'alert' : 'status');
+    n.setAttribute('aria-atomic', 'true');
 
     if (title) {
-      const header = document.createElement("h3");
-      header.className = "notification__header";
-      header.textContent = title;
-      notification.appendChild(header);
+      const h = document.createElement('h3');
+      h.className = 'notification__header';
+      h.textContent = String(title);
+      h.id = `${id}-title`;
+      headerId = h.id;
+      n.appendChild(h);
+    }
+    const p = document.createElement('p');
+    p.className = 'notification__content';
+    p.textContent = String(message ?? '');
+    p.id = `${id}-content`;
+    contentId = p.id;
+    n.appendChild(p);
+
+    if (headerId) n.setAttribute('aria-labelledby', headerId);
+    if (contentId) n.setAttribute('aria-describedby', contentId);
+
+    // Кнопка закрытия
+    const btn = document.createElement('button');
+    btn.className = 'notification__close';
+    btn.type = 'button';
+    btn.setAttribute('aria-label', 'Закрыть уведомление');
+    btn.appendChild(document.createTextNode('×'));
+    btn.addEventListener('click', () => this.closeNotification(n));
+    n.appendChild(btn);
+
+    // Индикатор (выключаем при reduced motion или при duration=0)
+    const prefersReduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const useIndicator = !!showIndicator && !prefersReduced && duration > 0;
+    let indicatorEl = null;
+    if (useIndicator) {
+      indicatorEl = document.createElement('div');
+      indicatorEl.className = 'notification__indicator';
+      n.appendChild(indicatorEl);
     }
 
-    const content = document.createElement("p");
-    content.className = "notification__content";
-    content.textContent = message;
-    notification.appendChild(content);
+    // Внутреннее состояние для чистки и пауз
+    n.__timers = { rAF: null, timeout: null };
+    n.__time = { start: 0, pausedTotal: 0, pausedAt: 0, duration };
+    n.__onClose = typeof onClose === 'function' ? onClose : null;
 
-    let indicator;
-    let indicatorAnimationFrame;
-    let hoverPaused = false;
-    let startTime = null;
-    let pauseTime = 0;
+    // Анимация индикатора + автозакрытие
+    const animate = (ts) => {
+      if (!n.isConnected) return;
+      if (!n.__time.start) n.__time.start = ts;
+      if (n.__time.pausedAt) return; // на паузе
 
-    if (showIndicator) {
-      indicator = document.createElement("div");
-      indicator.className = "notification__indicator";
-      notification.appendChild(indicator);
-    }
+      const elapsed = ts - n.__time.start - n.__time.pausedTotal;
+      const progress = n.__time.duration ? Math.min(1, elapsed / n.__time.duration) : 1;
 
-    // Закрытие уведомления
-    const close = () => {
-      this.closeNotification(notification);
-    };
-
-    // Таймер для закрытия
-    let autoCloseTimeout = setTimeout(close, activeTime + animationTime);
-
-    // Анимация индикатора
-    const animate = (timestamp) => {
-      if (!startTime) startTime = timestamp;
-      if (hoverPaused) return;
-
-      const progress = (timestamp - startTime - pauseTime) / activeTime;
-      if (indicator) {
-        indicator.style.width = `${Math.max(0, 100 - progress * 100)}%`;
+      if (indicatorEl) {
+        indicatorEl.style.width = `${Math.max(0, 100 - progress * 100)}%`;
       }
 
       if (progress < 1) {
-        indicatorAnimationFrame = requestAnimationFrame(animate);
+        n.__timers.rAF = requestAnimationFrame(animate);
+      } else {
+        this.closeNotification(n);
       }
     };
 
-    if (showIndicator) {
-      indicatorAnimationFrame = requestAnimationFrame(animate);
-    }
+    const startTimers = () => {
+      if (n.__time.duration > 0) {
+        // Инициализируем начало сразу (важно для наведения до первого rAF)
+        if (!n.__time.start) n.__time.start = performance.now();
+        n.__timers.timeout = setTimeout(() => this.closeNotification(n), n.__time.duration);
+        if (useIndicator) n.__timers.rAF = requestAnimationFrame(animate);
+      }
+    };
 
-    // При наведении — отменяем таймер и паузим анимацию
-    notification.addEventListener("mouseenter", () => {
-      hoverPaused = true;
-      clearTimeout(autoCloseTimeout);
-      pauseTime = performance.now() - startTime;
+    const stopTimers = () => {
+      if (n.__timers.timeout) clearTimeout(n.__timers.timeout);
+      if (n.__timers.rAF) cancelAnimationFrame(n.__timers.rAF);
+      n.__timers.timeout = n.__timers.rAF = null;
+    };
+
+    // Пауза по наведению
+    n.addEventListener('mouseenter', () => {
+      if (!n.__time.pausedAt) {
+        n.__time.pausedAt = performance.now();
+        stopTimers();
+      }
     });
-
-    // При уходе мыши — перезапускаем таймер
-    notification.addEventListener("mouseleave", () => {
-      hoverPaused = false;
-      autoCloseTimeout = setTimeout(close, activeTime - pauseTime);
-      if (showIndicator) {
-        indicatorAnimationFrame = requestAnimationFrame(animate);
+    n.addEventListener('mouseleave', () => {
+      if (n.__time.pausedAt) {
+        n.__time.pausedTotal += performance.now() - n.__time.pausedAt;
+        n.__time.pausedAt = 0;
+        if (n.__time.duration > 0) {
+          const now = performance.now();
+          const elapsed = now - n.__time.start - n.__time.pausedTotal;
+          const rest = Math.max(0, n.__time.duration - elapsed);
+          n.__timers.timeout = setTimeout(() => this.closeNotification(n), rest);
+          if (useIndicator) n.__timers.rAF = requestAnimationFrame(animate);
+        }
       }
     });
 
-    // Кнопка закрытия
-    const closeBtn = document.createElement("button");
-    closeBtn.className = "notification__close";
-    closeBtn.setAttribute("aria-label", "Закрыть уведомление");
-    closeBtn.innerHTML = "&times;";
-    closeBtn.addEventListener("click", () => {
-      clearTimeout(autoCloseTimeout);
-      cancelAnimationFrame(indicatorAnimationFrame);
-      close();
-    });
-    notification.appendChild(closeBtn);
+    // Опционально закрывать по клику на карточку (кроме интерактивных элементов)
+    if (closeOnClick) {
+      n.addEventListener('click', (e) => {
+        if (e.target === btn) return;
+        const interactive = e.target.closest('button,a,[role="button"],input,textarea,select');
+        if (!interactive) this.closeNotification(n);
+      });
+    }
 
-    container.appendChild(notification);
+    container.appendChild(n);
 
+    // Показывающая анимация
     requestAnimationFrame(() => {
-      notification.classList.add("notification--show");
+      n.classList.add('notification--show');
+      if (typeof onOpen === 'function') onOpen();
+      startTimers();
+      if (isError) {
+        // Переведём фокус на кнопку закрытия для критичных ошибок
+        btn.focus({ preventScroll: true });
+      }
     });
+
+    // Хэндл наружу
+    return {
+      close: () => this.closeNotification(n),
+      el: n,
+      onClose: (cb) => { n.__onClose = typeof cb === 'function' ? cb : null; },
+    };
   }
 
-  closeNotification(notification) {
-    notification.classList.remove("notification--show");
-    notification.style.opacity = "0";
-    notification.style.transform = "translateY(-20px)";
-    notification.addEventListener("transitionend", () => {
-      notification.remove();
+  /** Закрыть и почистить */
+  closeNotification(n) {
+    if (!n || !n.isConnected) return;
+
+    // Чистим таймеры/RAF
+    if (n.__timers) {
+      if (n.__timers.timeout) clearTimeout(n.__timers.timeout);
+      if (n.__timers.rAF) cancelAnimationFrame(n.__timers.rAF);
+      n.__timers.timeout = n.__timers.rAF = null;
+    }
+
+    // Плавное закрытие: направление зависит от позиции
+    n.classList.remove('notification--show');
+    const pos = n.dataset.position || '';
+    const isTop = pos.startsWith('top');
+    n.style.opacity = '0';
+    n.style.transform = `translateY(${isTop ? '-20px' : '20px'})`;
+
+    const container = n.parentElement;
+    const onEnd = () => {
+      n.removeEventListener('transitionend', onEnd);
+      const cb = n.__onClose;
+      n.remove();
+
+      // Удаляем пустой контейнер
+      if (container && container.children.length === 0) {
+        container.remove();
+        // чистим ссылку
+        Object.keys(this.containers).forEach(k => {
+          if (this.containers[k] === container) delete this.containers[k];
+        });
+      }
+
+      if (typeof cb === 'function') cb();
+    };
+
+    // Динамический fallback по CSS-длительности
+    let ended = false;
+    const cs = getComputedStyle(n);
+    const dur = (cs.transitionDuration || '0s').split(',').map(s => parseFloat(s) || 0);
+    const del = (cs.transitionDelay || '0s').split(',').map(s => parseFloat(s) || 0);
+    const maxSec = Math.max(0, ...dur.map((d, i) => d + (del[i] || 0)));
+    const fallback = setTimeout(() => { if (!ended) onEnd(); }, (maxSec || 0.45) * 1000);
+
+    n.addEventListener('transitionend', () => {
+      ended = true;
+      clearTimeout(fallback);
+      onEnd();
     }, { once: true });
+  }
+
+  /** Явное разрушение системы (если нужно в SPA/HMR) */
+  destroy() {
+    document.removeEventListener('keydown', this.__onKeydown);
+    Object.values(this.containers).forEach(c => c.remove());
+    this.containers = {};
   }
 }
 
-document.addEventListener("DOMContentLoaded", () => {
-  window.notificationSystem = new NotificationSystem();
-
-  // Примеры:
-  window.notificationSystem.createNotification({
-    title: "Успешно",
-    message: "Данные сохранены.",
-    type: "success",
-    // activeTime: "10000000"
-  });
-
-  // window.notificationSystem.createNotification({
-  //   title: "Ошибка",
-  //   message: "Что-то пошло не так",
-  //   type: "error"
-  // });
-
-  // window.notificationSystem.createNotification({
-  //   title: "Информация",
-  //   message: "Это просто уведомление",
-  //   type: "info",
-  //   showIndicator: false
-  // });
+// Инициализация глобально (с защитой от повторной инициализации)
+document.addEventListener('DOMContentLoaded', () => {
+  if (!window.notificationSystem || !(window.notificationSystem instanceof NotificationSystem)) {
+    window.notificationSystem = new NotificationSystem();
+  }
 });

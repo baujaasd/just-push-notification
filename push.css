@@ -1,12 +1,12 @@
 :root {
   --notification-bg: #4279EF;
-  --notification-success: #4CAF50;
-  --notification-error: tomato;
-  --notification-info: #2196F3;
+  --notification-success: #2e7d32; /* лучше контраст */
+  --notification-error: #d32f2f;   /* лучше контраст */
+  --notification-info: #1976d2;
   --notification-color: #fff;
   --indicator-color: #FFD700;
-  --border-radius: 8px;
-  --shadow: 0px 2px 5px rgba(0, 0, 0, 0.25);
+  --border-radius: 10px;
+  --shadow: 0 4px 18px rgba(0, 0, 0, 0.18);
   --speed: .25s ease-in-out;
 }
 
@@ -14,162 +14,120 @@
 .notification__container {
   position: fixed;
   z-index: 9999;
-  display: -webkit-box;
-  display: -ms-flexbox;
   display: flex;
-  -webkit-box-orient: vertical;
-  -webkit-box-direction: normal;
-      -ms-flex-direction: column;
-          flex-direction: column;
+  flex-direction: column;
   gap: 12px;
   padding: 12px;
-  pointer-events: none;
+  pointer-events: none; /* клики проходят мимо контейнера */
 }
 
-.notification__container--top-left {
-  top: 0;
-  left: 0;
-  -webkit-box-align: start;
-      -ms-flex-align: start;
-          align-items: flex-start;
-}
-.notification__container--top-right {
-  top: 0;
-  right: 0;
-  -webkit-box-align: end;
-      -ms-flex-align: end;
-          align-items: flex-end;
-}
-.notification__container--bottom-left {
-  bottom: 0;
-  left: 0;
-  -webkit-box-align: start;
-      -ms-flex-align: start;
-          align-items: flex-start;
-}
-.notification__container--bottom-right {
-  bottom: 0;
-  right: 0;
-  -webkit-box-align: end;
-      -ms-flex-align: end;
-          align-items: flex-end;
-}
+.notification__container--top-left   { top: 0;    left: 0;    align-items: flex-start; }
+.notification__container--top-right  { top: 0;    right: 0;   align-items: flex-end; }
+.notification__container--bottom-left{ bottom: 0; left: 0;    align-items: flex-start; }
+.notification__container--bottom-right{bottom: 0; right: 0;   align-items: flex-end; }
 .notification__container--top-center {
-  top: 0;
-  left: 50%;
-  -webkit-transform: translateX(-50%);
-      -ms-transform: translateX(-50%);
-          transform: translateX(-50%);
-  -webkit-box-align: center;
-      -ms-flex-align: center;
-          align-items: center;
+  top: 0; left: 50%;
+  transform: translateX(-50%);
+  align-items: center;
 }
 .notification__container--bottom-center {
-  bottom: 0;
-  left: 50%;
-  -webkit-transform: translateX(-50%);
-      -ms-transform: translateX(-50%);
-          transform: translateX(-50%);
-  -webkit-box-align: center;
-      -ms-flex-align: center;
-          align-items: center;
+  bottom: 0; left: 50%;
+  transform: translateX(-50%);
+  align-items: center;
 }
 
-/* Уведомления */
+/* Карточка */
 .notification {
   background-color: var(--notification-bg);
   color: var(--notification-color);
   min-width: 240px;
   max-width: 320px;
   width: 100%;
-  padding: 12px;
+  padding: 12px 32px 12px 12px; /* место под кнопку закрытия */
   border-radius: var(--border-radius);
-  -webkit-box-shadow: var(--shadow);
-          box-shadow: var(--shadow);
+  box-shadow: var(--shadow);
   position: relative;
   opacity: 0;
-  -webkit-transform: translateY(20px);
-      -ms-transform: translateY(20px);
-          transform: translateY(20px);
-  -webkit-transition: opacity 0.4s ease, -webkit-transform 0.4s ease;
-  transition: opacity 0.4s ease, -webkit-transform 0.4s ease;
-  -o-transition: opacity 0.4s ease, transform 0.4s ease;
-  transition: opacity 0.4s ease, transform 0.4s ease;
-  transition: opacity 0.4s ease, transform 0.4s ease, -webkit-transform 0.4s ease;
-  pointer-events: auto;
+  transform: translateY(20px);
+  transition: opacity .4s ease, transform .4s ease;
+  pointer-events: auto; /* клики по карточке разрешены */
+  will-change: transform, opacity;
 }
 
 .notification--show {
   opacity: 1;
-  -webkit-transform: translateY(0);
-      -ms-transform: translateY(0);
-          transform: translateY(0);
+  transform: translateY(0);
 }
 
-.notification--success {
-  background-color: var(--notification-success);
-}
-.notification--error {
-  background-color: var(--notification-error);
-}
-.notification--info {
-  background-color: var(--notification-info);
-}
+/* Типы */
+.notification--success { background-color: var(--notification-success); }
+.notification--error   { background-color: var(--notification-error); }
+.notification--info    { background-color: var(--notification-info); }
 
 /* Контент */
 .notification__header {
-  font-weight: bold;
+  font-weight: 700;
   font-size: 14px;
   margin: 0 0 4px;
+  line-height: 1.25;
 }
 .notification__content {
   font-size: 14px;
   margin: 0;
+  line-height: 1.35;
 }
 
-/* Индикатор */
+/* Индикатор жизни */
 .notification__indicator {
   position: absolute;
-  bottom: 0;
-  left: 0;
-  height: 3px;
-  width: 100%;
+  bottom: 0; left: 0;
+  height: 3px; width: 100%;
   background-color: var(--indicator-color);
   border-bottom-left-radius: var(--border-radius);
   border-bottom-right-radius: var(--border-radius);
 }
 
-/* Закрыть */
+/* Кнопка закрытия */
 .notification__close {
   position: absolute;
-  top: 6px;
-  right: 6px;
-  display: -webkit-box;
-  display: -ms-flexbox;
+  top: 6px; right: 6px;
   display: flex;
-  -webkit-box-align: center;
-      -ms-flex-align: center;
-          align-items: center;
-  -webkit-box-pack: center;
-      -ms-flex-pack: center;
-          justify-content: center;
+  align-items: center;
+  justify-content: center;
   text-align: center;
   background: none;
   border: none;
-  font-size: 14px;
+  font-size: 16px;
   line-height: 1;
   cursor: pointer;
   color: #fff;
-  width: 18px;
-  height: 18px;
-  padding: 4px;
-  border-radius: 100px;
+  width: 22px; height: 22px;
+  padding: 0;
+  border-radius: 999px;
   z-index: 10;
 }
-
+.notification__close:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 2px;
+}
 @media (hover: hover) {
   .notification__close:hover {
-    background: #fff;
-    color: blue;
+    background: rgba(255,255,255,.15);
   }
+}
+
+/* Снижение анимаций */
+@media (prefers-reduced-motion: reduce) {
+  .notification {
+    transition: none !important;
+    transform: none !important;
+  }
+  .notification__indicator {
+    display: none !important;
+  }
+}
+
+/* (Опционально) простая тёмная тема через data-theme */
+[data-theme="dark"] .notification {
+  box-shadow: 0 6px 26px rgba(0,0,0,.35);
 }
