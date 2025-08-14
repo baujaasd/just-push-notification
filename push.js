@@ -42,8 +42,8 @@ class NotificationSystem {
    * @param {Object} opts
    * @param {string} [opts.title]
    * @param {string} [opts.message]
-   * @param {number} [opts.animationTime=250] (для совместимости; CSS рулит)
-   * @param {number} [opts.activeTime=3000] 0 или <0 — без автозакрытия и без индикатора
+   * @param {number} [opts.animationTime=250]
+   * @param {number} [opts.activeTime=3000] 0 или <0 — без автозакрытия/индикатора
    * @param {boolean} [opts.showIndicator=true]
    * @param {'success'|'error'|'info'} [opts.type='info']
    * @param {'top-left'|'top-right'|'bottom-left'|'bottom-right'|'top-center'|'bottom-center'} [opts.position='bottom-right']
@@ -73,9 +73,14 @@ class NotificationSystem {
     const duration = Math.max(0, Number(activeTime) || 0);
     const container = this.getContainer(position);
 
-    // Лимит «стопки»
-    while (container.children.length >= this.maxVisiblePerPosition) {
-      this.closeNotification(container.firstElementChild);
+    // === Ограничение "стопки" без бесконечного цикла ===
+    const current = Array.from(container.children);
+    const max = this.maxVisiblePerPosition;
+    // Нужен зазор на будущую карточку: допустимый размер "до вставки" = max - 1
+    const needToClose = Math.max(0, current.length - (max - 1));
+    if (needToClose > 0) {
+      const toClose = current.slice(0, needToClose); // самые старые
+      toClose.forEach(el => this.closeNotification(el));
     }
 
     // Карточка
@@ -134,10 +139,11 @@ class NotificationSystem {
     n.__timers = { rAF: null, timeout: null };
     n.__time = { start: 0, pausedTotal: 0, pausedAt: 0, duration };
     n.__onClose = typeof onClose === 'function' ? onClose : null;
+    n.__closing = false;
 
     // Анимация индикатора + автозакрытие
     const animate = (ts) => {
-      if (!n.isConnected) return;
+      if (!n.isConnected || n.__closing) return;
       if (!n.__time.start) n.__time.start = ts;
       if (n.__time.pausedAt) return; // на паузе
 
@@ -157,7 +163,6 @@ class NotificationSystem {
 
     const startTimers = () => {
       if (n.__time.duration > 0) {
-        // Инициализируем начало сразу (важно для наведения до первого rAF)
         if (!n.__time.start) n.__time.start = performance.now();
         n.__timers.timeout = setTimeout(() => this.closeNotification(n), n.__time.duration);
         if (useIndicator) n.__timers.rAF = requestAnimationFrame(animate);
@@ -208,7 +213,6 @@ class NotificationSystem {
       if (typeof onOpen === 'function') onOpen();
       startTimers();
       if (isError) {
-        // Переведём фокус на кнопку закрытия для критичных ошибок
         btn.focus({ preventScroll: true });
       }
     });
@@ -221,9 +225,10 @@ class NotificationSystem {
     };
   }
 
-  /** Закрыть и почистить */
+  /** Закрыть и почистить (идемпотентно) */
   closeNotification(n) {
-    if (!n || !n.isConnected) return;
+    if (!n || !n.isConnected || n.__closing) return;
+    n.__closing = true;
 
     // Чистим таймеры/RAF
     if (n.__timers) {
@@ -248,7 +253,6 @@ class NotificationSystem {
       // Удаляем пустой контейнер
       if (container && container.children.length === 0) {
         container.remove();
-        // чистим ссылку
         Object.keys(this.containers).forEach(k => {
           if (this.containers[k] === container) delete this.containers[k];
         });

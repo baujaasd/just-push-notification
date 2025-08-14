@@ -1,7 +1,7 @@
 :root {
   --notification-bg: #4279EF;
-  --notification-success: #2e7d32; /* лучше контраст */
-  --notification-error: #d32f2f;   /* лучше контраст */
+  --notification-success: #2e7d32; 
+  --notification-error: #d32f2f;   
   --notification-info: #1976d2;
   --notification-color: #fff;
   --indicator-color: #FFD700;
@@ -18,7 +18,7 @@
   flex-direction: column;
   gap: 12px;
   padding: 12px;
-  pointer-events: none; /* клики проходят мимо контейнера */
+  pointer-events: none;
 }
 
 .notification__container--top-left   { top: 0;    left: 0;    align-items: flex-start; }
@@ -43,14 +43,14 @@
   min-width: 240px;
   max-width: 320px;
   width: 100%;
-  padding: 12px 32px 12px 12px; /* место под кнопку закрытия */
+  padding: 12px 32px 12px 12px;
   border-radius: var(--border-radius);
   box-shadow: var(--shadow);
   position: relative;
   opacity: 0;
   transform: translateY(20px);
   transition: opacity .4s ease, transform .4s ease;
-  pointer-events: auto; /* клики по карточке разрешены */
+  pointer-events: auto;
   will-change: transform, opacity;
 }
 
@@ -127,7 +127,7 @@
   }
 }
 
-/* (Опционально) простая тёмная тема через data-theme */
+/* Тёмная тема (опционально) */
 [data-theme="dark"] .notification {
   box-shadow: 0 6px 26px rgba(0,0,0,.35);
 }

@@ -1,14 +1,11 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-  <meta charset="UTF-8" >
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Push Notifications — Demo</title>
-  <link rel="preload" href="push.css" as="style" onload="this.rel='stylesheet'">
+  <link rel="stylesheet" href="push.css"/>
   <script src="push.js" defer></script>
-  <noscript>
-    <link rel="stylesheet" href="push.css">
-  </noscript>
   <style>
     html, body, body * {
       margin: 0;
@@ -81,28 +78,22 @@
   </div>
 
   <script>
-    // Удобная обёртка для демки
     function notify(title, message, type = 'info', position = 'bottom-right', extra = {}) {
       if (!window.notificationSystem) {
         return console.error('Система уведомлений не загружена.');
       }
-      window.notificationSystem.createNotification({
-        title, message, type, position, ...extra
-      });
+      window.notificationSystem.createNotification({ title, message, type, position, ...extra });
     }
 
-    // Пример программного вызова: видно индикатор (activeTime > 0)
     document.addEventListener('DOMContentLoaded', () => {
-      // Инициализация защищена в push.js, но покажем демо
       const h = window.notificationSystem.createNotification({
         title: 'Успешно',
         message: 'Данные сохранены.',
         type: 'success',
         position: 'bottom-right',
-        activeTime: 5000,      // индикатор будет виден
+        activeTime: 5000,
         showIndicator: true
       });
-      // Закрыть через 2 секунды для примера:
       setTimeout(() => h.close(), 2000);
     });
   </script>
