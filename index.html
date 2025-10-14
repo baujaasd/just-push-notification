@@ -4,8 +4,8 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Push Notifications — Demo</title>
-  <link rel="stylesheet" href="push.css"/>
-  <script src="push.js" defer></script>
+  <link rel="stylesheet" href="push.css">
+  <script defer src="push.js"></script>
   <style>
     html, body, body * {
       margin: 0;
@@ -85,16 +85,16 @@
       window.notificationSystem.createNotification({ title, message, type, position, ...extra });
     }
 
-    document.addEventListener('DOMContentLoaded', () => {
-      const h = window.notificationSystem.createNotification({
-        title: 'Успешно',
-        message: 'Данные сохранены.',
-        type: 'success',
-        position: 'bottom-right',
-        activeTime: 5000,
-        showIndicator: true
-      });
-      setTimeout(() => h.close(), 2000);
+    window.addEventListener('load', () => {
+        const h = window.notificationSystem.createNotification({
+            title: 'Успешно',
+            message: 'Данные сохранены.',
+            type: 'success',
+            position: 'bottom-right',
+            activeTime: 5000,
+            showIndicator: true
+        });
+        setTimeout(() => h.close(), 2000);
     });
   </script>
 

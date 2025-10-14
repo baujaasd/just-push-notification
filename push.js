@@ -57,7 +57,6 @@ class NotificationSystem {
     let {
       title = '',
       message = '',
-      animationTime = 250,
       activeTime = 3000,
       showIndicator = true,
       type = 'info',
@@ -88,7 +87,7 @@ class NotificationSystem {
     n.className = `notification notification--${type}`;
     n.dataset.position = position;
 
-    // ARIA id-шники для связи
+    // ARIA id для связи
     const id = `ntf-${Date.now()}-${Math.random().toString(36).slice(2,8)}`;
     n.id = id;
     let headerId, contentId;
